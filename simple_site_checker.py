@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import logging
 import os
 import sys
@@ -8,6 +9,9 @@ from lxml import etree
 
 
 XMLNS = {'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+
+
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 VERBOSE_HELP = (
@@ -50,21 +54,24 @@ def main():
             sitemap = urllib2.urlopen(url)
         except urllib2.HTTPError, e:
             if e.code == 404:
-                logger.error('Sitemap not found.')
+                logger.error('Sitemap not found as %s' % url)
             elif e.code == 500:
-                logger.error('Server error when accessing sitemap.')
+                logger.error('Server error when accessing sitemap as %s' % url)
             sys.exit(1)
         except Exception, e: 
-            logger.exception('Unexpected error', e)
+            logger.debug('Unexpected error', e)
+            logger.error('Unexpected error while loading sitemap.')
             sys.exit(1)
     else:
         try:
             path = os.path.abspath(url)
             sitemap = open(url)
         except Exception, e:
-            logger.exception(e)
+            logger.error('Unable to load sitemap file from %s' % path)
+            logger.debug(e)
             sys.exit(1)
 
+    start = datetime.now()
     tree = etree.parse(sitemap)
     loc_tags = tree.xpath('//sitemap:loc', namespaces=XMLNS)
     total = len(loc_tags)
@@ -78,19 +85,22 @@ def main():
         try:
             response = urllib2.urlopen(HeadRequest(loc_url))
             succeeded += 1
-        except urllib2.HTTPError, e:
-            failed.append((loc_url, e))
-            logger.debug(loc_url, e)
         except Exception, e:
             failed.append((loc_url, e))
             logger.debug(loc_url, e)
+            logger.error('%s -> %s' % (loc_url, e))
 
+    end = datetime.now()
+    
+    hours, remainder = divmod((end-start).seconds, 3600)  
+    minutes, seconds = divmod(remainder, 60)   
     failed_number = len(failed)
-    logger.info('Checked %i, succeeded %i, failed %i' %
+    logger.info('Result - Checked %i, succeeded %i, failed %i' %
                 (total, succeeded, failed_number))
-    if failed_number > 0:
-        for url in failed:
-            logger.error(url)
+    logger.info('Start - %s' % start.strftime(DATETIME_FORMAT))
+    logger.info('End   - %s' % end.strftime(DATETIME_FORMAT))
+    logger.info('Time elapsed %s:%s:%s' % (hours, minutes, seconds))
+    
 
 
 if __name__ == '__main__':
