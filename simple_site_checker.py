@@ -1,72 +1,97 @@
+import argparse
+import logging
+import os
 import sys
 import urllib2
 
 from lxml import etree
 
+
 XMLNS = {'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
 
+
+VERBOSE_HELP = (
+    """Verbose mode. Controls the script output
+    0 - print output only in case of errors
+    1 - prints the result count plus list of failed URLs(if any)
+    2 - print all checked URLs \n""")
+
+LOGGING_LEVELS = {
+    0: logging.ERROR,
+    1: logging.INFO,
+    2: logging.DEBUG,
+}
+
+
 class HeadRequest(urllib2.Request):
-     def get_method(self):
-         return "HEAD"
+    def get_method(self):
+        return "HEAD"
+
 
 def main():
-    try:
-        url = sys.argv[1]
-    except IndexError:
-        print 'Please provide XML sitemap URL'
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description='Simple Site Checker',
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
+    parser.add_argument('sitemap', metavar='s', type=str,
+                   help='XML sitemap URL/path')
+
+    parser.add_argument('-v', '--verbose', type=int, required=False,
+                        help=VERBOSE_HELP, default = 0, choices=LOGGING_LEVELS)
+
+    args = parser.parse_args()
+
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(format='%(levelname)s: %(message)s',
+                        level = LOGGING_LEVELS[args.verbose])
+    
+    url = args.sitemap
     if '://' in url:
         try:
             sitemap = urllib2.urlopen(url)
         except urllib2.HTTPError, e:
             if e.code == 404:
-                print 'Sitemap not found'
+                logger.error('Sitemap not found.')
             elif e.code == 500:
-                print 'Server error when accessing sitemap.'
+                logger.error('Server error when accessing sitemap.')
             sys.exit(1)
         except Exception, e: 
-            print 'Unexpected error', e
+            logger.exception('Unexpected error', e)
             sys.exit(1)
     else:
         try:
+            path = os.path.abspath(url)
             sitemap = open(url)
-        except IOError, e:
-            print 'IOError', e
-            sys.exit(1)
         except Exception, e:
-            print 'Unexpected error', e
+            logger.exception(e)
             sys.exit(1)
 
     tree = etree.parse(sitemap)
-
     loc_tags = tree.xpath('//sitemap:loc', namespaces=XMLNS)
     total = len(loc_tags)
-    print '%i URLs found' % total
-    succeeded = failed = 0
-    failed_urls = []
+    logger.info('%i URLs found' % total)
+    succeeded = 0
+    failed = []
+
     for tag in loc_tags:
         loc_url = tag.text
-        print 'Checking: %s' % loc_url
+        logger.debug('Checking %s' % loc_url)
         try:
             response = urllib2.urlopen(HeadRequest(loc_url))
             succeeded += 1
         except urllib2.HTTPError, e:
-            failed += 1
-            failed_urls.append((loc_url, e))
-            print e
+            failed.append((loc_url, e))
+            logger.debug(loc_url, e)
         except Exception, e:
-            failed += 1
-            failed_urls.append((loc_url, e))
-            print 'Unexpected error:', e
+            failed.append((loc_url, e))
+            logger.debug(loc_url, e)
 
-    print 'Checked %i, succeeded %i, failed %i' % (total, succeeded, failed)
-    if failed > 0:
-        print '-' * 79
-        print 'Failed'
-        print '-' * 79
-        for url in failed_urls:
-            print '%s -> %s' % (url[0], url[1])
+    failed_number = len(failed)
+    logger.info('Checked %i, succeeded %i, failed %i' %
+                (total, succeeded, failed_number))
+    if failed_number > 0:
+        for url in failed:
+            logger.error(url)
+
 
 if __name__ == '__main__':
     main()
