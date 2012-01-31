@@ -17,7 +17,15 @@ Usage:
 python simple_site_checker.py http://example.com/sitemap.xml
 
 
-Todo:
-=====
- 
-* Enable XML sitemapindex processing
+Dependencies:
+=============
+
+Simple Site Checker depends on the following modules:
+* argparse
+* lxml
+
+
+Feel free to add any issues, bug reports, comments or advices to
+https://github.com/IlianIliev/Simple-Site-Checker
+ or
+http://ilian.i-n-i.org/simple-site-checker/
