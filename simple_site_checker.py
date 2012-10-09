@@ -7,6 +7,7 @@ import urllib2
 
 from lxml import etree
 
+USER_AGENT = ''
 
 SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 XMLNS = {'sitemap': SITEMAP_NAMESPACE}
@@ -46,12 +47,14 @@ class XMLSitemapParser(object):
         logger.debug('Loading sitemap %s' % url)
         if '://' in url:
             try:
-                sitemap = urllib2.urlopen(url)
+                sitemap = urllib2.urlopen(urllib2.Request(url, headers={'User-Agent': USER_AGENT}))
             except urllib2.HTTPError, e:
                 if e.code == 404:
                     logger.error('Sitemap not found as %s' % url)
                 elif e.code == 500:
                     logger.error('Server error when accessing sitemap as %s' % url)
+                else:
+                    logger.error('Server error \'%s\' when accessing sitemap as %s' % (e, url))
                 sys.exit(1)
             except Exception, e: 
                 logger.debug('Unexpected error', e)
@@ -95,7 +98,7 @@ class XMLSitemapParser(object):
             loc_url = tag.text
             logger.debug('Checking %s' % loc_url)
             try:
-                response = urllib2.urlopen(HeadRequest(loc_url))
+                response = urllib2.urlopen(HeadRequest(loc_url, headers={'User-Agent': USER_AGENT}))
                 self.succeeded += 1
             except Exception, e:
                 self.failed.append((loc_url, e))
