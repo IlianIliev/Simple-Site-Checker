@@ -100,6 +100,7 @@ class XMLSitemapParser(object):
             try:
                 response = urllib2.urlopen(HeadRequest(loc_url, headers={'User-Agent': USER_AGENT}))
                 self.succeeded += 1
+                logger.info('%s - OK' % loc_url)
             except Exception, e:
                 self.failed.append((loc_url, e))
                 logger.debug(loc_url, e)
