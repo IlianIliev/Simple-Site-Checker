@@ -103,7 +103,6 @@ class XMLSitemapParser(object):
                 logger.info('%s - OK' % loc_url)
             except Exception, e:
                 self.failed.append((loc_url, e))
-                logger.debug(loc_url, e)
                 logger.error('%s -> %s' % (loc_url, e))
 
     def process_sitemaps(self):
