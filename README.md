@@ -1,4 +1,3 @@
-===========
 Simple Site Checker
 ===========
 
@@ -14,7 +13,18 @@ broken link in the sitemap.
 
 Usage:
 ======
-python simple_site_checker.py http://example.com/sitemap.xml
+you should have python3 and pip setup in your environment
+
+> install argparse and lxml
+
+    pip install argparse lxml
+> run to check your setup
+
+    python setup.py setup
+> run your the script and provide the path to your sitemap.xml file as the first params
+
+    python simple_site_checker.py ./sitemap.xml
+
 
 
 Dependencies:
@@ -25,7 +35,8 @@ Simple Site Checker depends on the following modules:
 * lxml
 
 
-Feel free to add any issues, bug reports, comments or advices to
-https://github.com/IlianIliev/Simple-Site-Checker
- or
-http://ilian.i-n-i.org/simple-site-checker/
+Feel free to add any issues, bug reports, comments or advices to [IlianIliev](https://github.com/IlianIliev/Simple-Site-Checker)
+
+
+
+* http://ilian.i-n-i.org/simple-site-checker/

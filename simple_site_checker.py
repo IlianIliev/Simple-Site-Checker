@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 import os
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from lxml import etree
 
@@ -33,7 +33,7 @@ LOGGING_LEVELS = {
 logger = logging.getLogger(__name__)
 
 
-class HeadRequest(urllib2.Request):
+class HeadRequest(urllib.request.Request):
     def get_method(self):
         return "HEAD"
 
@@ -48,8 +48,8 @@ class XMLSitemapParser(object):
         logger.debug('Loading sitemap %s' % url)
         if '://' in url:
             try:
-                sitemap = urllib2.urlopen(urllib2.Request(url, headers={'User-Agent': USER_AGENT}))
-            except urllib2.HTTPError, e:
+                sitemap = urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': USER_AGENT}))
+            except urllib.error.HTTPError as e:
                 if e.code == 404:
                     logger.error('Sitemap not found as %s' % url)
                 elif e.code == 500:
@@ -57,21 +57,21 @@ class XMLSitemapParser(object):
                 else:
                     logger.error('Server error \'%s\' when accessing sitemap as %s' % (e, url))
                 sys.exit(1)
-            except Exception, e: 
+            except Exception as e: 
                 logger.debug('Unexpected error', e)
                 logger.error('Unexpected error while loading sitemap.')
                 sys.exit(1)
         else:
             try:
                 path = os.path.abspath(url)
-                sitemap = open(url)
-            except Exception, e:
+                sitemap = open(url, encoding="utf8")
+            except Exception as e:
                 logger.error('Unable to load sitemap file from %s' % path)
                 logger.debug(e)
                 sys.exit(1)
         try:
             tree = etree.parse(sitemap)
-        except Exception, e:
+        except Exception as e:
             logger.debug('Unexpected error', e)
             logger.error('Unexpected error while parsing sitemap XML from %s' % url)
         else:
@@ -99,10 +99,14 @@ class XMLSitemapParser(object):
             loc_url = tag.text
             logger.debug('Checking %s' % loc_url)
             try:
-                response = urllib2.urlopen(HeadRequest(loc_url, headers={'User-Agent': USER_AGENT}))
+                loc_url = urllib.parse.urlsplit(loc_url)
+                loc_url = list(loc_url)
+                loc_url[2] = urllib.parse.quote(loc_url[2])
+                loc_url = urllib.parse.urlunsplit(loc_url)
+                response = urllib.request.urlopen(HeadRequest(loc_url.encode('ascii', 'ignore').decode('ascii'), headers={'User-Agent': USER_AGENT}))
                 self.succeeded += 1
                 logger.info('%s - OK' % loc_url)
-            except Exception, e:
+            except Exception as e:
                 self.failed.append((loc_url, e))
                 logger.error('%s -> %s' % (loc_url, e))
 
@@ -149,3 +153,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+   
